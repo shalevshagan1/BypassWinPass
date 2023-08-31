@@ -1,5 +1,3 @@
-# sudo apt install genisoimage grub
-# get stage2_eltrino from https://littleosbook.github.io/files/stage2_eltorito
 import os
 import shutil
 import requests
@@ -9,7 +7,7 @@ import subprocess
 BUSYBOX_VERSION = "busybox-1.36.1"
 BUSYBOX_EXTENSIONS = ".tar.bz2"
 
-KERNEL_VERSION = subprocess.check_output("uname -r", shell=True, text=True)[:-1] # tested with 6.2.0-31-generic
+KERNEL_VERSION = subprocess.check_output(["uname", "-r"], text=True)[:-1] # tested with 6.2.0-31-generic
 
 def make_initramfs():
     # Create initramfs
@@ -52,52 +50,87 @@ def make_busybox():
         pass 
 
 
+def add_program_and_depends(name):
+    fullpath = subprocess.check_output(["which", name], text=True)[:-1]
+
+    ldd_proc = subprocess.Popen(["ldd", fullpath], stdout=subprocess.PIPE, text=True)    
+    grep_proc = subprocess.Popen(["grep", "-o", '/[^ ]*'], stdin=ldd_proc.stdout, stdout=subprocess.PIPE, text=True)
+    ldd_proc.stdout.close()
+
+    depends_path = grep_proc.communicate()[0].split('\n')
+
+    # copy dependencies
+    for systempath in depends_path:
+        locallibpath = os.path.join("./initramfs", systempath[1:])
+        if not os.path.exists(locallibpath):
+            os.makedirs(os.path.dirname(locallibpath), exist_ok=True)
+            shutil.copy(systempath, locallibpath)
+
+    # copy binary
+    localbinarypath = os.path.join("./initramfs", fullpath[1:])
+    os.makedirs(os.path.dirname(localbinarypath), exist_ok=True)
+    shutil.copy(fullpath, localbinarypath)
+
+
+def make_diskutils():
+    add_program_and_depends("blkid")
+    add_program_and_depends("lsblk")
+
+
 def get_drivers():
     os.makedirs(f"./initramfs/lib/modules/{KERNEL_VERSION}/kernel/drivers/ata/", exist_ok=True)
 
     shutil.copy(f"/lib/modules/{KERNEL_VERSION}/kernel/drivers/ata/libahci.ko",  f"./initramfs/lib/modules/{KERNEL_VERSION}/kernel/drivers/ata/libahci.ko")
     shutil.copy(f"/lib/modules/{KERNEL_VERSION}/kernel/drivers/ata/ahci.ko",  f"./initramfs/lib/modules/{KERNEL_VERSION}/kernel/drivers/ata/ahci.ko")
 
-# TODO copy lsblk and blkid and their deps
 
 def make_iso():
+    # Compress initramfs
+    subprocess.run("find . -print0 | cpio --null -ov --format=newc > ../initramfs.cpio", shell=True, cwd="./initramfs")
+    subprocess.run(["gzip", "./initramfs.cpio"])
+
     os.makedirs("./iso/boot/grub")
-    #shutil.copy("")
 
-    # copy vmlinuz to /iso/boot
-#     cp ./initramfs.cpio.gz iso/boot/initramfs.cpio.gz
+    shutil.copy(f"/boot/vmlinuz-{KERNEL_VERSION}", "./iso/boot")
+    shutil.copy(f"initramfs.cpio.gz", "./iso/boot")
 
-#     # copy menu.lst to /iso/boot/grub
-#     # copy stage2_eltorito to /iso/boot/grub
+    shutil.copy(f"./assets/menu.lst", "./iso/boot/grub")
+    resp = requests.get("https://littleosbook.github.io/files/stage2_eltorito")
+    with open("./iso/boot/grub/stage2_eltorito", 'a') as file:
+        file.write(resp.content)
 
-#     sudo genisoimage -R                         \
-#                 -b boot/grub/stage2_eltorito    \
-#                 -no-emul-boot                   \
-#                 -boot-load-size 4               \
-#                 -A os                           \
-#                 -input-charset utf8             \
-#                 -quiet                          \
-#                 -boot-info-table                \
-#                 -o os.iso                       \
-#                 iso
+    cmd = command = [
+        "sudo", "genisoimage",
+        "-R",
+        "-b", "./boot/grub/stage2_eltorito",
+        "-no-emul-boot",
+        "-boot-load-size", "4",
+        "-A", "os",
+        "-input-charset", "utf8",
+        "-quiet",
+        "-boot-info-table",
+        "-o", "os.iso",
+        "iso"
+    ]
+    subprocess.run(cmd, check=True)
 
+def cleanup():
+    pass
+    # rm ../initramfs.cpio
+    # rm ../initramfs.cpio.gz
+    # rm ../os.iso
 
-# rm ../initramfs.cpio
-# rm ../initramfs.cpio.gz
-# rm ../os.iso
-
-# find . -print0 | cpio --null -ov --format=newc > ../initramfs.cpio 
-# cd ..
-# gzip ./initramfs.cpio
-
-# cp -aLR /lib/x86_64-linux-gnu/{libblkid.so.1,libmount.so.1,libsmartcols.so.1,libudev.so.1,libc.so.6,libselinux.so.1,libpcre2-8.so.0} ~/Desktop/initramfs/lib/x86_64-linux-gnu
-# cp -aLR /lib64/ld-linux-x86-64.so.2 /home/shalev/Desktop/initramfs/lib64
 
 def main():
+    # sudo apt install genisoimage lsblk blkid ntfs-3g ntfsfix
+    # add clean up
+    # add bash?
+
     #make_initramfs() # Works!
     #make_busybox() # Works!
     #get_drivers() # Works!
+    #make_diskutils() # Works!
     make_iso() 
 
-
-main()
+if __name__ == "__main__":
+    main()
