@@ -23,12 +23,7 @@ def make_initramfs():
     with open("./initramfs/init", 'w') as file:
         file.write(content)
 
-
     shutil.copy("./assets/sethc.exe", "initramfs")
-
-    # cd initramfs/dev
-    #sudo mknod sda b 8 0 
-    # sudo mknod console c 5 1
 
 
 def make_busybox():
