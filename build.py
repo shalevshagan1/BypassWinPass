@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import shutil
 import requests
@@ -16,6 +17,13 @@ def make_initramfs():
         os.makedirs(os.path.join("initramfs", directory), exist_ok=True)
 
     shutil.copy("./assets/init", "initramfs")
+    with open("./initramfs/init", 'r') as file:
+        content = file.read()
+    content = content.replace("KERNEL_VERSION_PLACEHOLDER", KERNEL_VERSION)
+    with open("./initramfs/init", 'w') as file:
+        file.write(content)
+
+
     shutil.copy("./assets/sethc.exe", "initramfs")
 
     # cd initramfs/dev
@@ -24,7 +32,7 @@ def make_initramfs():
 
 
 def make_busybox():
-    # TODO - Check which tools are requried to compile it
+    # TODO - Check which tools are requried to compile busybox
     resp = requests.get(f"https://www.busybox.net/downloads/{BUSYBOX_VERSION + BUSYBOX_EXTENSIONS}")
     with open(BUSYBOX_VERSION + BUSYBOX_EXTENSIONS, "wb") as file:
         file.write(resp.content)
@@ -44,6 +52,7 @@ def make_busybox():
         file.write(content)
 
     try:
+        # TODO direct output
         subprocess.run(["make"], cwd=BUSYBOX_VERSION, check=True)
         subprocess.run(["make", "CONFIG_PREFIX=../initramfs", "install"], cwd=BUSYBOX_VERSION, check=True)
     except subprocess.CalledProcessError as e:
@@ -73,8 +82,11 @@ def add_program_and_depends(name):
 
 
 def make_diskutils():
+    add_program_and_depends("bash")
     add_program_and_depends("blkid")
     add_program_and_depends("lsblk")
+    add_program_and_depends("ntfs-3g")
+    add_program_and_depends("ntfsfix")
 
 
 def get_drivers():
@@ -86,51 +98,58 @@ def get_drivers():
 
 def make_iso():
     # Compress initramfs
-    subprocess.run("find . -print0 | cpio --null -ov --format=newc > ../initramfs.cpio", shell=True, cwd="./initramfs")
+    subprocess.run("find . -print0 | cpio --null -o --format=newc > ../initramfs.cpio", shell=True, cwd="./initramfs")
     subprocess.run(["gzip", "./initramfs.cpio"])
 
-    os.makedirs("./iso/boot/grub")
+    os.makedirs("./iso/boot/grub", exist_ok=True)
 
-    shutil.copy(f"/boot/vmlinuz-{KERNEL_VERSION}", "./iso/boot")
+    try:
+        subprocess.run(["sudo", "cp", "-av", f"/boot/vmlinuz-{KERNEL_VERSION}", "./iso/boot/vmlinuz"], check=True) # Copying the Kernel requires root, but I don't want the entire script to require it
+    except subprocess.CalledProcessError as e:
+        pass 
+
     shutil.copy(f"initramfs.cpio.gz", "./iso/boot")
 
     shutil.copy(f"./assets/menu.lst", "./iso/boot/grub")
     resp = requests.get("https://littleosbook.github.io/files/stage2_eltorito")
-    with open("./iso/boot/grub/stage2_eltorito", 'a') as file:
+    with open("./iso/boot/grub/stage2_eltorito", 'ab') as file:
         file.write(resp.content)
 
     cmd = command = [
         "sudo", "genisoimage",
         "-R",
-        "-b", "./boot/grub/stage2_eltorito",
+        "-b", "boot/grub/stage2_eltorito",
         "-no-emul-boot",
         "-boot-load-size", "4",
-        "-A", "os",
+        "-A", "C00LOS",
         "-input-charset", "utf8",
         "-quiet",
         "-boot-info-table",
-        "-o", "os.iso",
-        "iso"
+        "-o", "C00LOS.iso",
+        "./iso/"
     ]
-    subprocess.run(cmd, check=True)
+
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        pass 
 
 def cleanup():
-    pass
-    # rm ../initramfs.cpio
-    # rm ../initramfs.cpio.gz
-    # rm ../os.iso
+    # TODO - check if file/dir exist
+    shutil.rmtree("iso")
+    shutil.rmtree("initramfs")
+    os.remove("initramfs.cpio.gz")
+    os.remove("os.iso")
 
 
 def main():
     # sudo apt install genisoimage lsblk blkid ntfs-3g ntfsfix
-    # add clean up
-    # add bash?
-
-    #make_initramfs() # Works!
-    #make_busybox() # Works!
-    #get_drivers() # Works!
-    #make_diskutils() # Works!
-    make_iso() 
+    #cleanup()
+    make_initramfs() # Works!
+    make_busybox() # Works!
+    get_drivers() # Works!
+    make_diskutils() # Works!
+    make_iso()  # Works!
 
 if __name__ == "__main__":
     main()

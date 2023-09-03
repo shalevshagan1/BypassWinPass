@@ -3,8 +3,8 @@ mount -t proc none /proc
 mount -t sysfs none /sys
 mount -t devtmpfs  devtmpfs  /dev
 
-insmod /lib/modules/6.2.0-26-generic/kernel/drivers/ata/libahci.ko
-insmod /lib/modules/6.2.0-26-generic/kernel/drivers/ata/ahci.ko
+insmod /lib/modules/KERNEL_VERSION_PLACEHOLDER/kernel/drivers/ata/libahci.ko
+insmod /lib/modules/KERNEL_VERSION_PLACEHOLDER/kernel/drivers/ata/ahci.ko
 
 ln -s /proc/self/fd /dev/fd # in order to use process substitution
 mkdir /mnt/c

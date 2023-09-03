@@ -1,7 +1,7 @@
 default=0
 timeout=0
 
-title Shalev's Cool Project
+title Shalev's C00L Project
 kernel /boot/vmlinuz quiet loglevel=3
 initrd /boot/initramfs.cpio.gz
 # defoptions=quiet splash
