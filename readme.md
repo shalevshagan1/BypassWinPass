@@ -20,6 +20,7 @@ When activated on the Lock Screen, the Sticky Keys executeable runs with SYSTEM 
 ## Compiling Sethc
 Optional, sethc comes compiled. <br>
 Run Visual Studio 2022, open the sln, change to Release and hit ctrl+B.
+## Compiling the ISO
 Tested only on Debian (Ubuntu), won't work on WSL. <br>
 Run: <br>
 `pip3 install -r requirements.txt` <br>
