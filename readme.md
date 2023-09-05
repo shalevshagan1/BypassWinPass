@@ -16,18 +16,29 @@ When you boot the ISO, it loads the Initial RAM Filesystem, typically used in Li
 Anyway, on Windows, a 'feature' called "Sticky Keys" triggered when you press Shift 5 times. Who cares? Well, if you're logged in, no one. But if you're locked out of your system, you're in luck.
 When activated on the Lock Screen, the Sticky Keys executeable runs with SYSTEM Privilege, meaning that if we can replace the executeable, we can launch a Command Prompt as Administrator and run a command to REMOVE the user's password.
 
-# How to compile it?
+# Getting Started
+You can download a compiled ISO from the [Releases Page](https://github.com/shalevshagan1/BypassWinPass/releases).
+
 ## Compiling Sethc
-Optional, sethc comes compiled. <br>
+Optional, sethc comes precompiled. <br>
 Open the Solution in Visual Studio 2022, change to Release Mode, hit Ctrl+B and copy sethc.exe to the assets folder.
-## Compiling the ISO
+## Creating the ISO
 Tested only on Debian (Ubuntu), won't work on WSL. <br>
 Run: <br>
 `python3 -m pip install -r requirements.txt` <br>
 `python3 ./build.py`
 
+# Usage
+0. Download and Compile the project (optional).
+1. Create bootable USB from the ISO using a tool like [Rufus](https://rufus.ie/en/).
+2. IMPORTANT: Shut Down Windows, and not Reboot.
+   For those who are curious why, when you restart Windows, it enters hibernation mode, during which the contents of the memory are saved to a file, leaving the partition unwritable.
+4. Boot the the ISO, wait for it to finish and press Return.
+5. Boot Windows, reach the password screen, press Shift 5 times, and then enter your username in the console.
+6. Enter to your account with an empty password.
+
 TODO
-- [ ] add hiberfile support
+- [ ] add hiberfile removal support
 - [ ] shrink size by remove unnecessary BusyBox tools
 - [ ] add 32 bit support
 - [ ] add support for UNICODE Account names
