@@ -18,7 +18,6 @@ When activated on the Lock Screen, the Sticky Keys executeable runs with SYSTEM 
 
 
 TODO
-- [] compile staticly with all libraries
 - [] add 32 bit support
 - [] add support for unicode Account names
 - [] add Linux support
