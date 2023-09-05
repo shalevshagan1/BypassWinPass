@@ -26,7 +26,7 @@ int main()
 	}
 	else
 	{
-		printf("something went wrong...\nPlease open an issue on github.com/shalevshagan1/<PROJECT_NAME>/issues with the following output:\n");
+		printf("something went wrong...\nPlease open an issue on github.com/shalevshagan1/BypassWinPass/issues with the following output:\n");
 		puts(buff); // TODO - Make buff only stderr
 	}
 

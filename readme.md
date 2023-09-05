@@ -19,17 +19,16 @@ When activated on the Lock Screen, the Sticky Keys executeable runs with SYSTEM 
 # How to compile it?
 ## Compiling Sethc
 Optional, sethc comes compiled. <br>
-Run Visual Studio 2022, open the sln, change to Release and hit ctrl+B.
+Open the Solution in Visual Studio 2022, change to Release Mode, hit Ctrl+B and copy sethc.exe to the assets folder.
 ## Compiling the ISO
 Tested only on Debian (Ubuntu), won't work on WSL. <br>
 Run: <br>
-`pip3 install -r requirements.txt` <br>
+`python3 -m pip install -r requirements.txt` <br>
 `python3 ./build.py`
 
-
 TODO
-- [ ] add 32 bit support
-- [ ] add support for unicode Account names
-- [ ] add Linux support
 - [ ] add hiberfile support
-- [ ] shrink size
+- [ ] shrink size by remove unnecessary BusyBox tools
+- [ ] add 32 bit support
+- [ ] add support for UNICODE Account names
+- [ ] add Linux support
